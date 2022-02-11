@@ -1,0 +1,192 @@
+---
+title: 'AE 12: Conditional Probability'
+author: "Your Name"
+date: "2/15/2022"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, 
+                      message = FALSE)
+```
+
+```{r load-packages}
+library(tidyverse)
+library(knitr)
+```
+
+```{r load-data}
+sta199 <- read_csv("sta199-fa21-year-major.csv")
+```
+
+
+## Learning goals
+
+-   Define marginal, joint, and conditional probabilities, and calculate each "manually" and in a reproducible way
+-   Identify whether two events are independent
+-   Apply Bayes' theorem using the Hypothetical 10,000
+
+## Coming Up
+
+- Lab 5 due Friday.
+- Homework 3 assigned Thursday.
+- Prep Quiz Due by 11:59 PM today
+
+## Definitions
+
+Let A and B be events.
+
+-   **Marginal probability:** The probability an event occurs regardless of values of the other event
+  - *P(A)* or *P(B)*
+
+-   **Joint probability**: The probability two or more simultaneously occur
+  - *P(A and B)* 
+  
+-   **Conditional probability**: The probability an event occurs given the other has occurred
+  - *P(A|B)* or *P(B|A)*
+
+-   **Independent events**: Knowing one event has occurred does not lead to any change in the probability we assign to another event.
+  - *P(A|B) = P(A)* or *P(B|A) = P(B)*
+
+## Part 1: STA 199 years & majors
+
+For this portion of the AE, we will continue using the data including the year in school and majors for students taking STA 199 in Fall 2021, i.e., you! The data set includes the following variables:
+
+-   `section`: STA 199 section
+-   `year`: Year in school
+-   `major_category`: Major / academic interest.
+    -   For the purposes of this AE, we'll call this the student's "major".
+
+Let's start with the contingency table from the last class:
+
+```{r pivot-wider}
+sta199 %>% 
+  count(year, major_category) %>%
+  pivot_wider(id_cols = c(year, major_category),#how we identify unique obs
+              names_from = major_category, #how we will name the columns
+              values_from = n, #values used for each cell
+              values_fill = 0) %>% #how to fill cells with 0 observations 
+  kable() # neatly display the results
+```
+
+Try to answer the questions below using the contingency table and using code to answer in a reproducible way.
+
+**Part A:** What is the probability a randomly selected STA 199 student is studying a subject in the "other" major category?
+
+```{r prob-other-major}
+# add code 
+```
+
+**Part B**: What is the probability a randomly selected STA 199 student is a first-year?
+
+```{r ex1-part-b}
+# add code 
+```
+
+**Part C**: What is the probability a randomly selected STA 199 student is a first year and is studying a subject in the "other" major category?
+
+```{r ex1-part-c}
+## add code 
+```
+
+**Part D**: What is the probability a randomly selected STA 199 student is a first year given they are studying a subject in the "other" major category?
+
+```{r ex1-part-d}
+## add code 
+```
+
+**Part E**: What is the probability a randomly selected STA 199 student is studying a subject in the "other" major category given they are a first-year?
+
+```{r ex1-part-e}
+# add code
+```
+
+**Part F**: Are being a first-year and studying a subject in the "other" category independent events? Briefly explain.
+
+## Part 2: Bayes' Theorem
+
+### Monty Hall Problem:
+
+A Video: https://brilliant.org/wiki/monty-hall-problem/.
+
+“Suppose you’re on a game show, and you’re given the choice of three doors: Behind one door is a car; behind the others, goats. You pick a door, say No. 1, and the host, who knows what’s behind the doors, opens another door, say No. 3, which has a goat. He then says to you,”Do you want to pick door No. 2?" Is it to your advantage to switch your choice?"
+
+We will investigate the above decision of whether to switch or not to switch.
+
+Assumptions:
+
+The host will always open a door not picked by the contestant.
+
+The host will always open a door which reveals a goat (i.e. not a car).
+
+The host will always offer the contestant the chance to switch to another door.
+
+The door behind which the car is placed is chosen at random.
+
+The door initially chosen by the contestant is chosen at random.
+
+```{r doors}
+doors <- c(1, 2, 3)
+```
+
+```{r monty}
+monty_hall <- tibble(
+  car_door = sample(doors, size = 10000, replace = TRUE),
+  my_door = sample(doors, size = 10000, replace = TRUE)
+  )
+monty_hall
+```
+
+```{r monty2}
+monty_hall <- monty_hall %>% 
+  rowwise() %>% 
+  mutate(monty_door = if_else(car_door == my_door,
+                              sample(doors[-my_door], size = 1),
+                              6 - (car_door + my_door))) %>% 
+  ungroup()
+monty_hall
+```
+
+```{r monty3}
+monty_hall <- monty_hall %>% 
+  mutate(switch_win = car_door != my_door,
+         stay_win   = car_door == my_door)
+monty_hall
+```
+
+```{r monty4}
+monty_hall %>% 
+  summarise(switch_win_prob = mean(switch_win),
+            stay_win_prob   = mean(stay_win))
+```
+
+
+## Some Practice using the Hypothetical 10,000
+
+The global coronavirus pandemic illustrates the need for accurate testing of COVID-19, as its extreme infectivity poses a significant public health threat. Due to the time-sensitive nature of the situation, the FDA enacted emergency authorization of a number of serological tests for COVID-19 in 2020. Full details of these tests may be found on its website [here](https://www.fda.gov/medical-devices/coronavirus-disease-2019-covid-19-emergency-use-authorizations-medical-devices/eua-authorized-serology-test-performance).
+
+We will define the following events:
+
+-   **Pos**: The event the Alinity test returns positive.
+-   **Neg**: The event the Alinity test returns negative.
+-   **Covid**: The event a person has COVID
+-   **No Covid**: The event a person does not have COVID
+
+The Abbott Alinity test has an estimated sensitivity of 100%, *P(Pos \| Covid) = 1*, and specificity of 99%, *P(Neg \| No Covid) = 0.99*.
+
+Suppose the prevalence of COVID-19 in the general population is about 2%, *P(Covid) = 0.02*.
+
+Bayes Theorem and the [Hypothetical 10,000](https://sphweb.bumc.bu.edu/otlt/mph-modules/bs/bs704_probability/bs704_probability6.html).
+
+**Part A**: Use the Hypothetical 10,000 to calculate the probability a person has COVID given they get a positive test result, i.e. *P(Covid | Pos)*.
+
+|           | Covid | No Covid | Total |
+|-----------|-------|----------|-------|
+| **Pos**   |       |          |       |
+| **Neg**   |       |          |       |
+| **Total** |       |          | 10000 |
+
+
+**Part B:** Use Bayes' Theorem to calculate *P(Covid|Pos)*. 
